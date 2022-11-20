@@ -1,0 +1,149 @@
+version: "3.9"
+
+services:
+  zookeeper:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      target: kafka
+    container_name: zookeeper
+    profiles:
+      - all
+    ports:
+      - "2181:2181"
+    environment:
+      MODE: zookeeper
+
+  kafka:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      target: kafka
+    container_name: kafka
+    profiles:
+      - all
+    depends_on:
+      - zookeeper
+    expose:
+      - 29092 # necessary for in-docker communication
+    ports:
+      - "9092:9092"
+    environment:
+      MODE: kafka
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://kafka:29092,EXTERNAL://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_LOG_CLEANUP_POLICY: "delete"
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_LOG_RETENTION_HOURS: 336 #14 days
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+
+  kafka-ui:
+    image: vectorized/console:latest
+    container_name: kafka-ui
+    profiles:
+      - all
+    depends_on:
+      - kafka
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_BROKERS: kafka:29092
+
+  ksql-server:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      target: ksql
+    container_name: ksql-server
+    profiles:
+      - ksql
+      - all
+    depends_on:
+      - kafka
+    ports:
+      - "8088:8088"
+    environment:
+      MODE: server
+      KSQL_LISTENERS: http://0.0.0.0:8088
+      KSQL_BOOTSTRAP_SERVERS: kafka:29092
+
+  ksql-cli:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      target: ksql
+    container_name: ksql-cli
+    profiles:
+      - ksql
+      - all
+    depends_on:
+      - kafka
+      - ksql-server
+    entrypoint: /bin/sh
+    tty: true
+    environment:
+      MODE: cli
+      KSQL_SERVER: http://ksql-server:8088
+
+  pinot-controller:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      target: pinot
+    container_name: pinot-controller
+    profiles:
+      - pinot
+      - all
+    restart: unless-stopped
+    depends_on:
+      - zookeeper
+    ports:
+      - "9000:9000"
+    environment:
+      MODE: controller
+      CONTROLLER_PORT: 9000
+      JAVA_OPTS: "-Xms1G -Xmx4G"
+      ZOOKEEPER: zookeeper:2181
+
+  pinot-broker:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      target: pinot
+    container_name: pinot-broker
+    profiles:
+      - pinot
+      - all
+    restart: unless-stopped
+    depends_on:
+      - pinot-controller
+    ports:
+      - "8099:8099"
+    environment:
+      MODE: broker
+      JAVA_OPTS: "-Xms4G -Xmx4G"
+      ZOOKEEPER: zookeeper:2181
+
+  pinot-server:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      target: pinot
+    container_name: pinot-server
+    profiles:
+      - pinot
+      - all
+    restart: unless-stopped
+    depends_on:
+      - kafka
+      - pinot-broker
+    ports:
+      - "8098:8098"
+    environment:
+      MODE: server
+      JAVA_OPTS: "-Xms4G -Xmx4G"
+      ZOOKEEPER: zookeeper:2181
+    volumes:
+      - ./pinot:/usr/pinot

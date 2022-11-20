@@ -1,0 +1,53 @@
+{
+    "schemaName": "transaction_window",
+    "primaryKeyColumns": [
+        "WINDOW_START",
+        "WINDOW_END"
+    ],
+    "dimensionFieldSpecs": [
+        {
+            "name": "__metadata$offset",
+            "dataType": "STRING"
+        }
+    ],
+    "metricFieldSpecs": [
+        {
+            "name": "TOTAL_PAID",
+            "dataType": "INT"
+        },
+        {
+            "name": "TOTAL_TRANSACTIONS",
+            "dataType": "INT"
+        },
+        {
+            "name": "AVERAGE_TRANSACTION_VALUE",
+            "dataType": "FLOAT"
+        }
+    ],
+    "dateTimeFieldSpecs": [
+        {
+            "name": "WINDOW_START",
+            "dataType": "LONG",
+            "format": "1:MILLISECONDS:EPOCH",
+            "granularity": "1:MILLISECONDS"
+        },
+        {
+            "name": "WINDOW_END",
+            "dataType": "LONG",
+            "format": "1:MILLISECONDS:EPOCH",
+            "granularity": "1:MILLISECONDS"
+        },
+        {
+            "name": "START",
+            "dataType": "TIMESTAMP",
+            "format": "1:SECONDS:SIMPLE_DATE_FORMAT:yyyy-MM-dd HH:mm:ss",
+            "granularity": "1:SECONDS"
+        },
+        {
+            "name": "END",
+            "dataType": "TIMESTAMP",
+            "format": "1:SECONDS:SIMPLE_DATE_FORMAT:yyyy-MM-dd HH:mm:ss",
+            "granularity": "1:SECONDS"
+        }
+    ]
+}
