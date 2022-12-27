@@ -1,3 +1,5 @@
+.PHONY: flink ksql
+
 dev: 
 	docker compose --profile all up -d --build
 
@@ -9,7 +11,8 @@ project:
 	make dev
 	@sleep 5
 	make create-kafka-topic topic=transactions
-	make create-kafka-topic topic=windowed_transactions
+	make create-kafka-topic topic=transactions_aggregate_ksql
+	make create-kafka-topic topic=transactions_aggregate_flink
 	@sleep 10
 	make create-ksql-resources
 	@sleep 10
@@ -32,8 +35,20 @@ create-pinot-table:
 		-controllerHost pinot-controller -controllerPort 9000 \
 		-exec
 
+flink: 
+	docker compose --profile flink up -d --build
+
+flink-sql:
+	docker compose run -it flink-sql
+
+kafka: 
+	docker compose --profile kafka up -d --build
+
+ksql: 
+	docker compose --profile ksql up -d --build
+
 ksql-cli:
-	docker exec -it ksql-cli bash
+	docker compose run -it ksql-cli
 
 pinot-cli:
 	docker exec -it pinot-controller bash

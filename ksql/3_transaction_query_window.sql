@@ -1,5 +1,5 @@
 CREATE OR REPLACE TABLE windowed_transactions 
-WITH (kafka_topic='windowed_transactions')
+WITH (kafka_topic='transactions_aggregate_ksql')
 AS 
   SELECT
          '1' AS dummy,

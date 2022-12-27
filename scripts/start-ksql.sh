@@ -13,7 +13,7 @@ then
 
 elif [ "$MODE" == "cli" ];
 then
-    true
+    $KSQL_HOME/bin/ksql ${KSQL_SERVER}
 else
     echo "Undefined workload type $MODE. Please specify one of those: server, cli"
 fi

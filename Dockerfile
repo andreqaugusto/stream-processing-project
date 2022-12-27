@@ -54,5 +54,8 @@ COPY ./scripts/start-pinot.sh /
 
 CMD ["/bin/bash", "/start-pinot.sh"]
 
+FROM flink:1.16.0 AS flink
 
+ENV FLINK_VERSION=1.16.0
 
+RUN wget -P /opt/flink/lib https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-kafka/${FLINK_VERSION}/flink-sql-connector-kafka-${FLINK_VERSION}.jar

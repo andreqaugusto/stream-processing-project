@@ -5,7 +5,7 @@ from pathlib import Path
 import requests
 
 ROUTE = "http://localhost:8088/ksql"
-HEADER = {"content-type": "application/json"}
+HEADER = {"Accept": "application/vnd.ksql.v1+json"}
 
 
 def call_api_with_statements():
@@ -25,6 +25,7 @@ def call_api_with_statements():
         with open(path / file) as f:
             data = f.read()
             content_json = {"ksql": data}
+            print(content_json)
             response = requests.post(url=ROUTE, data=json.dumps(content_json), headers=HEADER)
             response.raise_for_status()
 

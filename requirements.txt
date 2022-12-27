@@ -2,3 +2,4 @@ click
 Faker
 kafka-python
 requests
+diagrams
