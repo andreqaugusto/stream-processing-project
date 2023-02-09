@@ -1,3 +1,6 @@
+.draft
+.vscode
 logs/
 ksql/old
 .draft/
+storage*

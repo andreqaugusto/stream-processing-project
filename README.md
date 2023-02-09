@@ -2,17 +2,16 @@
 
 This is a personal project that I started with the goal to study and use some of the most used stream-processing technologies.
 
+I am **not** interested in testing the scalability, robustness or any infrastructure-related theme on any of these tools. Also, I am **not** instered in advanced features of each technology. The purpose here is to understand **how** would you code a simple stream processing pipeline (something not too far from a `Hello World` for streaming pipelines).
+
 ## Technologies Used
 - [x] [Apache Kafka](https://kafka.apache.org/documentation/)
 - [x] [kSQL](https://docs.ksqldb.io/en/latest/)
 - [x] [Apache Pinot](https://docs.pinot.apache.org/)
 - [x] [Apache Flink](https://nightlies.apache.org/flink/flink-docs-master/)
-- [ ] Apache Spark
-- [ ] Apache Superset
+- [x] [Apache Spark](https://spark.apache.org/docs/latest/structured-streaming-programming-guide.html)
 
 ## Architecture
-
-As of today, the project architecture is:
 
 ![Architecture](./architecture/streaming_project.png)
 
@@ -20,12 +19,10 @@ Using the Python library `faker`, we create fake `transaction` data to simulate 
 
 The data is produced by the `fake_data.py` script. One can notice that we hard-coded a list of 10 `user_id`s. This was done to help debugging and ensure correctness of our stream pipelines, since each `user_id` start with a number from 0 to 9 and the each user pays a fixed amount equal to ten times its leading number (with `0` being interpreted as `10`). As an example, the user with leading number `5` will always pay the amount of `50`.
 
-We then use both `Apache Flink` and `kSQL` to process the data. Our goal is to group all the **paid** transactions into **3 second windows** and calculate:
+We then use both `Apache Flink`, `kSQL` and `Apache Spark` to process the data. Our goal is to group all the **paid** transactions into **3 second windows** and calculate:
 - the sum of what was paid;
 - the number of transactions;
 - the average of transactions.
-
-As we can see in the [Techonologies](#technologies) section, we intend to add `Spark` as the last stream-processing technology and `Superset` as a visualization layer.
 
 ## Instructions
 
@@ -52,11 +49,11 @@ With all that done, run `make data N={{ number }}` to send `{{ number }}` of mes
 
 ![Sending Data using N=10](imgs/make_data.png)
 
-You can visualize the messages sent using the Kafka UI available at [localhost:8080](http://localhost:8080). The messages are sent to the `transactions` topic. `kSQL` stores the aggregations at the `transactions_aggregate_ksql` topic and `Flink` stores the results in the `transactions_aggregate_flink` topic.
+You can visualize the messages sent using the Kafka UI available at [localhost:8080](http://localhost:8080). The messages are sent to the `transactions` topic. The aggregations are stored at the `transactions_aggregate_{{ technology }}` topic.
 
 ![Messages in Kafka](imgs/kafka_messages.png)
 
-Then, you can see the resulting tables in `pinot` using the `pinot-controller` interface at [localhost:9000](http://localhost:9000).
+Then, you can see the resulting tables for results coming from `kSQL` in `pinot` using the `pinot-controller` interface at [localhost:9000](http://localhost:9000).
 
 ![Data in Pinot](imgs/pinot_table.png)
 
@@ -70,6 +67,9 @@ If needed, more commands are available in the `Makefile`.
 
 - We need to send a key to Kafka topic in order to use `table` in `kSQL`. See Topic #6 in https://www.confluent.io/blog/troubleshooting-ksql-part-1/.
 - The `ROWTIME` pseudo-column available in `kSQL`: https://docs.ksqldb.io/en/latest/developer-guide/ksqldb-reference/create-stream/#rowtime
+- `Apache Pinot` does a incredible job of compacting the Kafka records that are "wrong" (e.g. without the complete calculations from the window, example below) coming from `kSQL` (and it is fair to imagine that it would do the same job for the data coming from `Spark`). One could imagine what are the performance gains (or losses) if we set `Kafka`s [log.cleanup.policy](https://kafka.apache.org/documentation/#brokerconfigs_log.cleanup.policy) to `compact` instead of the default `delete`. Obviously this approach would need defining a key for each message, but a natural candidate for this would be the `window_start` (or a hash of it).
+
+![Ongoing calculations for some window](imgs/kafka_messages_not_compacted.png)
 
 ## Design Choices
 
@@ -78,3 +78,5 @@ We delibery chose to **not** use default Docker images of said technologies when
 ## References
 - https://www.confluent.io/blog/real-time-analytics-with-kafka-and-pinot/
 - https://docs.pinot.apache.org/basics/getting-started/running-pinot-in-docker
+- https://www.uber.com/en-BR/blog/real-time-exactly-once-ad-event-processing/
+- https://itnext.io/exploring-popular-open-source-stream-processing-technologies-part-1-of-2-31069337ba0e & https://itnext.io/exploring-popular-open-source-stream-processing-technologies-part-2-of-2-2832b7727cd0

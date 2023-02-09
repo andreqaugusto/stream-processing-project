@@ -1,6 +1,6 @@
 from diagrams import Cluster, Diagram, Edge
 from diagrams.custom import Custom
-from diagrams.onprem.analytics import Flink
+from diagrams.onprem.analytics import Flink, Spark
 from diagrams.onprem.queue import Kafka
 from diagrams.programming.language import Python
 
@@ -15,6 +15,7 @@ with Diagram("Streaming Project", show=False):
 
     with Cluster("Stream Processing"):
         flink = Flink("Flink")
+        spark = Spark("Spark")
         ksql = Custom("kSQL", "./ksql.jpg", height="2", width="2", imagescale="width")
 
     kafka >> edge >> flink >> edge >> Kafka("Kafka Topic\n'transactions_aggregate_flink'")
@@ -28,3 +29,5 @@ with Diagram("Streaming Project", show=False):
         >> edge
         >> Custom("Apache Pinot", "./pinot.jpg")
     )
+
+    kafka >> edge >> spark >> edge >> Kafka("Kafka Topic\n'transactions_aggregate_spark'")

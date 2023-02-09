@@ -1,4 +1,4 @@
-.PHONY: flink ksql
+.PHONY: flink ksql spark
 
 dev: 
 	docker compose --profile all up -d --build
@@ -13,6 +13,9 @@ project:
 	make create-kafka-topic topic=transactions
 	make create-kafka-topic topic=transactions_aggregate_ksql
 	make create-kafka-topic topic=transactions_aggregate_flink
+	make create-kafka-topic topic=transactions_aggregate_spark
+	@sleep 10
+	make run-spark-job
 	@sleep 10
 	make create-ksql-resources
 	@sleep 10
@@ -37,6 +40,8 @@ create-pinot-table:
 
 flink: 
 	docker compose --profile flink up -d --build
+	make create-kafka-topic topic=transactions
+	make create-kafka-topic topic=transactions_aggregate_flink
 
 flink-sql:
 	docker compose run -it flink-sql
@@ -46,6 +51,8 @@ kafka:
 
 ksql: 
 	docker compose --profile ksql up -d --build
+	make create-kafka-topic topic=transactions
+	make create-kafka-topic topic=transactions_aggregate_ksql
 
 ksql-cli:
 	docker compose run -it ksql-cli
@@ -55,3 +62,14 @@ pinot-cli:
 
 pinot:
 	docker compose run pinot-server -d
+
+run-spark-job:
+	docker exec -d spark ./bin/spark-submit \
+	 --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.1 \
+	 /app/jobs/transaction_job.py
+
+spark: 
+	docker compose --profile spark up -d --build
+	make create-kafka-topic topic=transactions
+	make create-kafka-topic topic=transactions_aggregate_spark
+
